@@ -13,8 +13,8 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
   address private manager;
   string hotelName;
 
-    constructor(address owner, string memory name) ERC1155(",m,") {
-        manager = owner; //sets the manager to the address passed into the constructor
+    constructor(string memory name) ERC1155("") {
+        manager = msg.sender; //sets the manager to the address passed into the constructor
         hotelName = name;
   }
 

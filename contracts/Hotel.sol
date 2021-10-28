@@ -85,8 +85,8 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
     ) public view onlyOwner returns (
       uint[] memory, uint[] memory, uint, uint) {
 
-      uint startTimestamp = toTimestamp(startYear, startDay, startMonth);
-      uint endTimestamp = toTimestamp(endYear, endDay, endMonth);
+      uint startTimestamp = toTimestamp(startYear, startMonth, startDay);
+      uint endTimestamp = toTimestamp(endYear, endMonth, endDay);
       uint numDays = getNumDays(startTimestamp, endTimestamp);
 
       uint[] memory tokenIds = new uint[](numDays);

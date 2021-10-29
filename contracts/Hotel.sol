@@ -24,7 +24,8 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
   Counters.Counter private roomNightCounter;//creates RoomNightIds (tokenIds)
   mapping(uint => RoomNight) public idToRoomNight;//mapping tokenId to RoomNight sruct
 
-  Counters.Counter private index;
+  uint[] tokenIds;
+  uint[] amounts;
 
    struct RoomType {
       uint roomTypeId;
@@ -75,24 +76,20 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
       return numDays;
     }
 
-    function getTimestampsAndArrays(
+    function getTimestampsAndDays(
       uint8 startDay,
       uint8 startMonth,
       uint16 startYear,
       uint8 endDay,
       uint8 endMonth,
       uint16 endYear
-    ) public view onlyOwner returns (
-      uint[] memory, uint[] memory, uint, uint) {
+    ) public view onlyOwner returns (uint, uint) {
 
       uint startTimestamp = toTimestamp(startYear, startMonth, startDay);
       uint endTimestamp = toTimestamp(endYear, endMonth, endDay);
       uint numDays = getNumDays(startTimestamp, endTimestamp);
 
-      uint[] memory tokenIds = new uint[](numDays);
-      uint[] memory amounts = new uint[](numDays);
-
-      return (tokenIds, amounts, startTimestamp, endTimestamp);
+      return (startTimestamp, numDays);
     }
     //takes a room type, date range, price, and amount of rooms to be minted each night
     //creates a roomNight struct for each date, assigns them a unique token id, and mints/
@@ -100,33 +97,27 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
       uint _roomTypeId,
       uint amount,
       uint _price,
-      uint[] memory tokenIds,
-      uint[] memory amounts,
       uint startTimestamp,
-      uint endTimestamp
+      uint numDays
     ) internal onlyOwner {
 
-      for(uint i=startTimestamp; i<endTimestamp; i+DAY_IN_SECONDS) {
+      for(uint i=0; i<numDays; i++) {
         uint _tokenId = roomNightCounter.current();
-        uint _index = index.current();
 
         RoomNight memory _newRoomNight = RoomNight({
           roomTypeId: _roomTypeId,
-          date: i,
+          date: startTimestamp + (i*DAY_IN_SECONDS),
           price: _price,
           tokenId: _tokenId
         });
 
         idToRoomNight[_tokenId] = _newRoomNight;
-        tokenIds[_index] = _tokenId;
-        amounts[_index] = amount;
+        tokenIds.push(_tokenId);
+        amounts.push(amount);
 
         roomNightCounter.increment();
-        index.increment();
         }
 
-        _mintBatch(manager, tokenIds, amounts, "");
-        index.reset();
       }
 
       function mintRoomNights(
@@ -141,10 +132,16 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
         uint16 endYear
       ) public onlyOwner {
 
-        (uint[] memory ids, uint[] memory amounts, uint start, uint end) =
-        getTimestampsAndArrays(startDay, startMonth, startYear, endDay, endMonth, endYear);
+        (uint start, uint numDays) =
+        getTimestampsAndDays(startDay, startMonth, startYear, endDay, endMonth, endYear);
 
-        mintRoomNightHelper(roomTypeId, amount, price, ids, amounts, start, end);
+        mintRoomNightHelper(roomTypeId, amount, price, start, numDays);
+
+        _mintBatch(manager, tokenIds, amounts, "");
+
+        delete tokenIds;
+        delete amounts;
+
       }
     }
 

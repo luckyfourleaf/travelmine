@@ -10,18 +10,18 @@ import "./DateTime.sol";
 contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
     using Counters for Counters.Counter;
 
-  address private manager;
-  string hotelName;
+  address public manager;
+  //string hotelName;
 
-    constructor(string memory name) ERC1155("") {
+    constructor() ERC1155("") {
         manager = msg.sender; //sets the manager to the address passed into the constructor
-        hotelName = name;
+        //hotelName = name;
   }
 
   RoomType[] roomTypes; //haven't used yet
-  Counters.Counter private roomTypeCounter;//creates roomTypeIds
+  Counters.Counter public roomTypeCounter;//creates roomTypeIds
   mapping(uint => RoomType) public idToRoomType;//mapping roomTypeId to RoomType struct
-  Counters.Counter private roomNightCounter;//creates RoomNightIds (tokenIds)
+  Counters.Counter public roomNightCounter;//creates RoomNightIds (tokenIds)
   mapping(uint => RoomNight) public idToRoomNight;//mapping tokenId to RoomNight sruct
 
   uint[] tokenIds;
@@ -43,6 +43,14 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
     uint date;
     uint price;//currently per room, not per person
 }
+
+  function getTokenIds() public view returns (uint[] memory) {
+    return tokenIds;
+  }
+
+  function getAmounts() public view returns (uint[] memory) {
+    return amounts;
+  }
 
   //create a new RoomType struct, add it to the mapping (and array?), increment counter
   function createRoomType(
@@ -69,13 +77,6 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
             roomTypeCounter.increment();
   }
 
-
-    function getNumDays(uint startTimestamp, uint endTimeStamp) internal pure returns (uint) {
-      uint diff = endTimeStamp - startTimestamp;
-      uint numDays = diff / DAY_IN_SECONDS;
-      return numDays;
-    }
-
     function getTimestampsAndDays(
       uint8 startDay,
       uint8 startMonth,
@@ -87,7 +88,8 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
 
       uint startTimestamp = toTimestamp(startYear, startMonth, startDay);
       uint endTimestamp = toTimestamp(endYear, endMonth, endDay);
-      uint numDays = getNumDays(startTimestamp, endTimestamp);
+      uint diff = endTimestamp - startTimestamp;
+      uint numDays = diff / 1 days;
 
       return (startTimestamp, numDays);
     }
@@ -99,14 +101,14 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
       uint _price,
       uint startTimestamp,
       uint numDays
-    ) internal onlyOwner {
+    ) public onlyOwner {
 
       for(uint i=0; i<numDays; i++) {
         uint _tokenId = roomNightCounter.current();
 
         RoomNight memory _newRoomNight = RoomNight({
           roomTypeId: _roomTypeId,
-          date: startTimestamp + (i*DAY_IN_SECONDS),
+          date: startTimestamp + i * 1 days,
           price: _price,
           tokenId: _tokenId
         });

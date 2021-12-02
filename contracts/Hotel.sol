@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./DateTime.sol";
+import "./Market.sol";
 
-contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
+contract Hotel is DateTime, Market, ERC1155, Ownable, ERC1155Burnable {
     using Counters for Counters.Counter;
 
   address public manager;
@@ -18,7 +19,7 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
         //hotelName = name;
   }
 
-  RoomType[] roomTypes; //haven't used yet
+  RoomType[] roomTypes;
   Counters.Counter public roomTypeCounter;//creates roomTypeIds
   mapping(uint => RoomType) public idToRoomType;//mapping roomTypeId to RoomType struct
   Counters.Counter public roomNightCounter;//creates RoomNightIds (tokenIds)
@@ -43,16 +44,20 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
     uint date;
     uint price;//currently per room, not per person
 }
-
+  //only for testing purposes
   function getTokenIds() public view returns (uint[] memory) {
     return tokenIds;
   }
 
+  //only for testing purposes
   function getAmounts() public view returns (uint[] memory) {
     return amounts;
   }
-
-  //create a new RoomType struct, add it to the mapping (and array?), increment counter
+  //returns roomType array
+  function getRoomTypes() public view returns (RoomType[] memory) {
+    return roomTypes;
+  }
+  //create a new RoomType struct, add it to the mapping/array, increment counter
   function createRoomType(
     string memory _roomName,
     uint8 _maxOccupancy,
@@ -76,7 +81,9 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
             idToRoomType[id] = _newRoomType;
             roomTypeCounter.increment();
   }
-
+    //breaks up functionality from original mint function.
+    //takes date info, converts to timestamps, returns timestamps and number of days
+    //in the date range.
     function getTimestampsAndDays(
       uint8 startDay,
       uint8 startMonth,
@@ -94,7 +101,8 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
       return (startTimestamp, numDays);
     }
     //takes a room type, date range, price, and amount of rooms to be minted each night
-    //creates a roomNight struct for each date, assigns them a unique token id, and mints/
+    //for each check in date, creates a roomNight instance, and assigns unique token ID
+    //adds token IDs and amounts to storage arrays to be used in batch minting
     function mintRoomNightHelper(
       uint _roomTypeId,
       uint amount,
@@ -121,7 +129,8 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
         }
 
       }
-
+      //this combines the getTimestampsAndDays and mintRoomNightHelper functions to mint..
+      //..the actual 1155 tokens.
       function mintRoomNights(
         uint roomTypeId,
         uint amount,
@@ -145,35 +154,8 @@ contract Hotel is DateTime, ERC1155, Ownable, ERC1155Burnable {
         delete amounts;
 
       }
-    }
 
-    //     function mintAndList(
-    //     uint _roomTypeId,
-    //     uint amount,
-    //     uint8 startDay,
-    //     uint8 startMonth,
-    //     uint16 startYear,
-    //     uint8 endDay,
-    //     uint8 endMonth,
-    //     uint16 endYear,
-    //     uint _price
-    //   ) public OnlyOwner {
-    //       MintRoomNights(
-    //         _roomTypeId,
-    //         amount,
-    //         startDay,
-    //         startMonth,
-    //         startYear,
-    //         endDay,
-    //         endMonth,
-    //         endYear,
-    //         _price);
-    //
-    //
-    //   }
-    //
-    //   function setURI(string memory newuri) public onlyOwner {
-    //       _setURI(newuri);
-    //   }
-    //
-    // }
+      /*function deployRoomNights(uint[] memory ids, uint[] memory amounts) external OnlyOwner {
+        safeBatchTransferFrom(msg.sender, market, ids, amounts);
+      }
+    }
